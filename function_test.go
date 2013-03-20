@@ -13,16 +13,23 @@ var functionTestcases = []struct {
 	{"(- 1 2)", -1},
 	{"(* 2 3)", 6},
 	{"(/ 4 2)", 2},
+	{"1", 1},
 }
 
 func TestFunctions(t *testing.T) {
 	for i, testcase := range functionTestcases {
-		output, err := Parse(strings.NewReader(testcase.input)).Interpret()
-		if output != testcase.output {
-			t.Errorf("%v %v => %v wanted %v", i, testcase.input, output, testcase.output)
-		}
-		if err != nil {
-			t.Errorf("%v Error %v", i, err)
+		node, parseErr := Parse(strings.NewReader(testcase.input))
+		if parseErr == nil {
+			output, interpretErr := node.Interpret()
+			if interpretErr != nil {
+				t.Errorf("%v Error %v", i, interpretErr)
+			}
+
+			if output != testcase.output {
+				t.Errorf("%v %v => %v wanted %v", i, testcase.input, output, testcase.output)
+			}
+		} else {
+			t.Errorf("%v Error %v", i, parseErr)
 		}
 	}
 }
