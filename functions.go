@@ -3,9 +3,13 @@ package lisp
 type Argument int
 type Function func(args []int) (result int, err error)
 
-var registeredFunctions = make([string]*Function)
+var registeredFunctions map[string]Function
 
-func registerFunction(names []string, f *Function) {
+// func init() {
+// 	registeredFunctions := make(map[string]Function)
+// }
+
+func registerFunction(names []string, f Function) {
 	for _, name := range names {
 		registeredFunctions[name] = f
 	}

@@ -19,7 +19,7 @@ func (node *ValueNode) Interpret() (n int, err error) {
 
 type FunctionNode struct {
 	Name string
-	Args []*TreeNode
+	Args []TreeNode
 }
 
 func (node *FunctionNode) Interpret() (n int, err error) {
@@ -28,18 +28,18 @@ func (node *FunctionNode) Interpret() (n int, err error) {
 		return 0, fmt.Errorf("Function %q not found", node.Name)
 	}
 
-	args := make([]int)
+	args := make([]int, len(node.Args))
 	for index, child := range node.Args {
 		value, err := child.Interpret()
 		if err != nil {
 			return 0, err
 		}
-		args = append(args, value)
+		args[index] = value
 	}
 
 	return f(args)
 }
 
-func Parse(input io.Reader) *TreeNode {
-
+func Parse(input io.Reader) TreeNode {
+	return &ValueNode{0}
 }

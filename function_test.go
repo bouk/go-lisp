@@ -17,9 +17,12 @@ var functionTestcases = []struct {
 
 func TestFunctions(t *testing.T) {
 	for i, testcase := range functionTestcases {
-		output := Parse(strings.NewReader(testcase.input)).Interpret()
+		output, err := Parse(strings.NewReader(testcase.input)).Interpret()
 		if output != testcase.output {
-			t.Errorf("%d %q => %q wanted %q", i, testcase.input, output, testcase.output)
+			t.Errorf("%v %v => %v wanted %v", i, testcase.input, output, testcase.output)
+		}
+		if err != nil {
+			t.Errorf("%v Error %v", i, err)
 		}
 	}
 }
