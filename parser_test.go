@@ -7,7 +7,7 @@ import (
 
 var parserTestcases = []struct {
 	input  string
-	output TreeNode
+	output *TreeNode
 }{
 	{
 		"(+ 1 2)",
@@ -24,14 +24,14 @@ var parserTestcases = []struct {
 		&FunctionNode{
 			Name: "+",
 			Args: {
-				FunctionNode{
+				&FunctionNode{
 					Name: "-",
 					Args: {
 						&ValueNode{2},
 						&ValueNode{2},
 					},
 				},
-				FunctionNode{
+				&FunctionNode{
 					Name: "*",
 					Args: {
 						&ValueNode{3},
