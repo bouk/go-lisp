@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"unicode"
 )
 
 type TreeNode interface {
@@ -27,7 +28,7 @@ type FunctionNode struct {
 func (node *FunctionNode) Interpret() (n int, err error) {
 	f, exists := registeredFunctions[node.Name]
 	if !exists {
-		return 0, fmt.Errorf("Function %q not found", node.Name)
+		return 0, fmt.Errorf("function %q not found", node.Name)
 	}
 
 	args := make([]int, len(node.Args))
@@ -46,37 +47,76 @@ func Parse(input io.Reader) (result TreeNode, err error) {
 	return parse(bufio.NewReader(input))
 }
 
-func isNumber(b byte) bool {
-	return b >= '0' && b <= '9'
+func isFirstSymbolRune(r rune) bool {
+	return (r != '(' && r != ')') && (unicode.IsPunct(r) || unicode.IsSymbol(r) || unicode.IsLetter(r))
+}
+
+func isSymbolRune(r rune) bool {
+	return isFirstSymbolRune(r) || unicode.IsDigit(r)
+}
+
+func readWhile(f func(r rune) bool, in *bufio.Reader) (read []byte, err error) {
+	read = make([]byte, 0, 1)
+	next := make([]byte, 1)
+	var b byte
+	next, _ = in.Peek(1)
+	for len(next) > 0 && f(rune(next[0])) {
+		b, err = in.ReadByte()
+		if err != nil {
+			return
+		}
+		read = append(read, b)
+		next, _ = in.Peek(1)
+	}
+	return
 }
 
 func parse(in *bufio.Reader) (result TreeNode, err error) {
+	readWhile(unicode.IsSpace, in)
+
 	next, err := in.Peek(1)
+	var read []byte
+
 	switch {
 	case next[0] == '(':
+		in.ReadByte()
 		// read name
-
-		// while not ')' read space + argument
-		err = fmt.Errorf("not implemented")
-		return
-	case isNumber(next[0]):
-		// read number
-		read := make([]byte, 0, 1)
-
-		for len(next) > 0 && isNumber(next[0]) {
-			var b byte
-			b, err = in.ReadByte()
+		read, err = readWhile(isSymbolRune, in)
+		if err != nil {
+			return
+		}
+		name := string(read)
+		// while not ')' read spaces + argument
+		args := make([]TreeNode, 0)
+		next, err = in.Peek(1)
+		for len(next) > 0 && next[0] != ')' {
+			readWhile(unicode.IsSpace, in)
+			var child TreeNode
+			child, err = parse(in)
 			if err != nil {
 				return
 			}
-			read = append(read, b)
-			next, _ = in.Peek(1)
+			args = append(args, child)
+			next, err = in.Peek(1)
+			if err != nil {
+				return
+			}
 		}
-
-		n, err := strconv.Atoi(string(read))
-		return &ValueNode{n}, err
+		_, err = in.ReadByte()
+		result = &FunctionNode{Name: name, Args: args}
+		return
+	case unicode.IsDigit(rune(next[0])):
+		// read number
+		read, err = readWhile(unicode.IsDigit, in)
+		if err != nil {
+			return
+		}
+		var n int
+		n, err = strconv.Atoi(string(read))
+		result = &ValueNode{n}
+		return
 	default:
-		err = fmt.Errorf("invalid symbol")
+		err = fmt.Errorf("invalid symbol %s", next)
 		return
 	}
 	return
