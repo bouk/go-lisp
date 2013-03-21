@@ -10,7 +10,11 @@ import (
 )
 
 var (
-	doneReading = errors.New("done reading input")
+	doneReading    = errors.New("done reading input")
+	escapedLetters = map[byte]byte{
+		'n': '\n',
+		't': '\t',
+	}
 )
 
 // Parses an io stream like a file
@@ -55,6 +59,10 @@ func readWhile(f func(r rune) bool, in *bufio.Reader) (read []byte, err error) {
 		}
 		if b == '\\' {
 			b, err = in.ReadByte()
+			actualByte, ok := escapedLetters[b]
+			if ok {
+				b = actualByte
+			}
 			if err != nil {
 				return
 			}

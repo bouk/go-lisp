@@ -80,6 +80,13 @@ var outputTestcases = []struct {
 	output string
 }{
 	{`(print "hello")`, `hello`},
+	{`
+		(defun p2 a (print a))
+		(p2 "a")`, "a"},
+	{`(print 123)`, "123"},
+	{`
+		(defun println line (print line "\n"))
+		(println "yoloswag")`, "yoloswag\n"},
 }
 
 func TestOutputfunction(t *testing.T) {

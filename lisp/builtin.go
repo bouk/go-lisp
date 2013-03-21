@@ -222,11 +222,14 @@ func builtinFunctions(defaultScope *Scope) {
 				return nil, fmt.Errorf("function %s needs %d arguments", name, len(funArgs))
 			}
 
-			funScope = NewScope(funScope)
+			innerScope := NewScope(funScope)
 			for i, arg := range funArgs {
-				funScope.Variables[arg] = args[i]
+				innerScope.Variables[arg], err = args[i].Interpret(funScope)
+				if err != nil {
+					return nil, err
+				}
 			}
-			return program.Interpret(funScope)
+			return program.Interpret(innerScope)
 		})
 		return
 	})
@@ -236,8 +239,16 @@ func builtinFunctions(defaultScope *Scope) {
 		if err != nil {
 			return nil, err
 		}
+
 		for _, val := range evaluatedArgs {
-			fmt.Fprint(scope.Out, val)
+			switch val.(type) {
+			case int:
+				fmt.Fprint(scope.Out, val.(int))
+			case string:
+				fmt.Fprint(scope.Out, val.(string))
+			default:
+				fmt.Fprintf(scope.Out, "%T", val)
+			}
 		}
 
 		return
