@@ -1,7 +1,12 @@
 package lisp
 
+import (
+	"io"
+)
+
 type Scope struct {
 	Parent    *Scope
+	Out       io.Writer
 	Variables map[string]Value
 	Functions map[string]Function
 }
@@ -11,7 +16,7 @@ func (s *Scope) FindFunction(name string) (f Function) {
 	if !found && s.Parent != nil {
 		f = s.Parent.FindFunction(name)
 	}
-	return f
+	return
 }
 
 func (s *Scope) RegisterFunctionAliases(names []string, f Function) {
@@ -38,6 +43,7 @@ func (s *Scope) SetVariable(name string, value Value) {
 	if !s.setVariable(name, value) {
 		s.Variables[name] = value
 	}
+	return
 }
 
 func (s *Scope) setVariable(name string, value Value) (found bool) {
@@ -52,6 +58,11 @@ func (s *Scope) setVariable(name string, value Value) (found bool) {
 	return
 }
 
-func NewScope(parent *Scope) *Scope {
-	return &Scope{parent, make(map[string]Value), make(map[string]Function)}
+func NewScope(parent *Scope) (s *Scope) {
+	s = &Scope{Variables: make(map[string]Value), Functions: make(map[string]Function)}
+	if parent != nil {
+		s.Parent = parent
+		s.Out = parent.Out
+	}
+	return
 }

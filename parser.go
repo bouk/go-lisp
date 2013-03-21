@@ -2,60 +2,35 @@ package lisp
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
 	"unicode"
 )
 
-type TreeNode interface {
-	Interpret(s *Scope) (v Value, err error)
-}
-
-type ValueNode struct {
-	Value
-}
-
-func (node *ValueNode) Interpret(s *Scope) (v Value, err error) {
-	return node.Value, nil
-}
-
-type FunctionNode struct {
-	Name string
-	Args []TreeNode
-}
-
-func (node *FunctionNode) Interpret(s *Scope) (v Value, err error) {
-	f := s.FindFunction(node.Name)
-	if f == nil {
-		return nil, fmt.Errorf("function %q not found", node.Name)
-	}
-
-	return f(s, node.Args)
-}
-
-type SymbolNode struct {
-	Name string
-}
-
-func (node *SymbolNode) Interpret(s *Scope) (v Value, err error) {
-	return s.GetVariable(node.Name), nil
-}
-
-type RootNode struct {
-	Program TreeNode
-}
-
-func (node *RootNode) Interpret() (v Value, err error) {
-	s := NewScope(nil)
-	builtinFunctions(s)
-	return node.Program.Interpret(s)
-}
+var (
+	doneReading = errors.New("done reading input")
+)
 
 // Parses an io stream like a file
 func Parse(input io.Reader) (upperNode *RootNode, err error) {
+	reader := bufio.NewReader(input)
 	upperNode = &RootNode{}
-	upperNode.Program, err = parse(bufio.NewReader(input))
+	upperNode.Program = make([]TreeNode, 0, 1)
+	for {
+		node, err := parse(reader)
+		if err != nil {
+			if err == doneReading {
+				err = nil
+				break
+			} else {
+				return nil, err
+			}
+		}
+		upperNode.Program = append(upperNode.Program, node)
+	}
+
 	return
 }
 
@@ -98,7 +73,7 @@ func parse(in *bufio.Reader) (result TreeNode, err error) {
 
 	// Nothing to read, eof
 	if len(next) == 0 {
-		return &ValueNode{nil}, nil
+		return nil, doneReading
 	}
 
 	switch {
@@ -175,7 +150,13 @@ func parse(in *bufio.Reader) (result TreeNode, err error) {
 		if err != nil {
 			return
 		}
-		result = &SymbolNode{string(read)}
+		symbol := string(read)
+
+		if symbol == "nil" {
+			result = &ValueNode{nil}
+		} else {
+			result = &SymbolNode{symbol}
+		}
 		return
 	default:
 		err = fmt.Errorf("invalid symbol %s", next)
