@@ -12,8 +12,8 @@ func invalidTypeError(expected string, actual interface{}) (err error) {
 
 func init() {
 	registerFunction([]string{"*", "mult"}, func(args []Value) (Value, error) {
-		if len(args) < 2 {
-			return 0, errors.New("not enough arguments for multiply, needs at least two")
+		if len(args) != 2 {
+			return 0, errors.New("not right number of arguments for multiply, should be two")
 		}
 		var result int = 1
 		for _, argument := range args {
@@ -28,8 +28,8 @@ func init() {
 	})
 
 	registerFunction([]string{"+", "add"}, func(args []Value) (Value, error) {
-		if len(args) < 2 {
-			return 0, errors.New("not enough arguments for add, needs at least two")
+		if len(args) != 2 {
+			return 0, errors.New("not right number of arguments for add, should be two")
 		}
 
 		switch args[0].(type) {
@@ -65,8 +65,8 @@ func init() {
 	})
 
 	registerFunction([]string{"-", "sub"}, func(args []Value) (Value, error) {
-		if len(args) < 2 {
-			return 0, errors.New("not enough arguments for subtract, needs at least two")
+		if len(args) != 2 {
+			return 0, errors.New("not right number of arguments for subtract, should be two")
 		}
 		switch args[0].(type) {
 		case int:
