@@ -9,14 +9,14 @@ import (
 )
 
 type TreeNode interface {
-	Interpret() (n int, err error)
+	Interpret() (n Value, err error)
 }
 
 type ValueNode struct {
-	Value int
+	Value
 }
 
-func (node *ValueNode) Interpret() (n int, err error) {
+func (node *ValueNode) Interpret() (v Value, err error) {
 	return node.Value, nil
 }
 
@@ -25,13 +25,13 @@ type FunctionNode struct {
 	Args []TreeNode
 }
 
-func (node *FunctionNode) Interpret() (n int, err error) {
+func (node *FunctionNode) Interpret() (v Value, err error) {
 	f, exists := registeredFunctions[node.Name]
 	if !exists {
-		return 0, fmt.Errorf("function %q not found", node.Name)
+		return nil, fmt.Errorf("function %q not found", node.Name)
 	}
 
-	args := make([]int, len(node.Args))
+	args := make([]Value, len(node.Args))
 	for index, child := range node.Args {
 		value, err := child.Interpret()
 		if err != nil {
@@ -41,6 +41,14 @@ func (node *FunctionNode) Interpret() (n int, err error) {
 	}
 
 	return f(args)
+}
+
+type SymbolNode struct {
+	Name string
+}
+
+func (node *SymbolNode) Interpret() (v Value, err error) {
+	return node.Name, nil
 }
 
 func Parse(input io.Reader) (result TreeNode, err error) {
@@ -60,10 +68,17 @@ func readWhile(f func(r rune) bool, in *bufio.Reader) (read []byte, err error) {
 	next := make([]byte, 1)
 	var b byte
 	next, _ = in.Peek(1)
+
 	for len(next) > 0 && f(rune(next[0])) {
 		b, err = in.ReadByte()
 		if err != nil {
 			return
+		}
+		if b == '\\' {
+			b, err = in.ReadByte()
+			if err != nil {
+				return
+			}
 		}
 		read = append(read, b)
 		next, _ = in.Peek(1)
@@ -74,8 +89,13 @@ func readWhile(f func(r rune) bool, in *bufio.Reader) (read []byte, err error) {
 func parse(in *bufio.Reader) (result TreeNode, err error) {
 	readWhile(unicode.IsSpace, in)
 
-	next, err := in.Peek(1)
+	next, err := in.Peek(2)
 	var read []byte
+
+	// Nothing to read, eof
+	if len(next) == 0 {
+		return &ValueNode{nil}, nil
+	}
 
 	switch {
 	case next[0] == '(':
@@ -88,22 +108,52 @@ func parse(in *bufio.Reader) (result TreeNode, err error) {
 		name := string(read)
 		// while not ')' read spaces + argument
 		args := make([]TreeNode, 0)
-		next, err = in.Peek(1)
-		for len(next) > 0 && next[0] != ')' {
+		for {
 			readWhile(unicode.IsSpace, in)
+			next, err = in.Peek(1)
+			if err != nil {
+				return nil, fmt.Errorf(") expected but %s was found", err)
+			}
+			if next[0] == ')' {
+				break
+			}
 			var child TreeNode
 			child, err = parse(in)
 			if err != nil {
 				return
 			}
+
 			args = append(args, child)
-			next, err = in.Peek(1)
-			if err != nil {
-				return
-			}
 		}
+
 		_, err = in.ReadByte()
 		result = &FunctionNode{Name: name, Args: args}
+		return
+	case next[0] == '"':
+		in.ReadByte()
+		// read string literal
+		read, err = readWhile(func(r rune) bool { return r != '"' }, in)
+		if err != nil {
+			return nil, fmt.Errorf(`" expected but %s`, err)
+		}
+
+		_, err = in.ReadByte()
+		if err != nil {
+			return nil, fmt.Errorf(`" expected but %s`, err)
+		}
+
+		result = &ValueNode{string(read)}
+		return
+	case len(next) > 1 && next[0] == '-' && unicode.IsDigit(rune(next[1])):
+		in.ReadByte()
+		// read negative number
+		read, err = readWhile(unicode.IsDigit, in)
+		if err != nil {
+			return
+		}
+		var n int
+		n, err = strconv.Atoi(string(read))
+		result = &ValueNode{-n}
 		return
 	case unicode.IsDigit(rune(next[0])):
 		// read number
@@ -114,6 +164,14 @@ func parse(in *bufio.Reader) (result TreeNode, err error) {
 		var n int
 		n, err = strconv.Atoi(string(read))
 		result = &ValueNode{n}
+		return
+	case isFirstSymbolRune(rune(next[0])):
+		// read symbol (which is actually just a string)
+		read, err = readWhile(isSymbolRune, in)
+		if err != nil {
+			return
+		}
+		result = &SymbolNode{string(read)}
 		return
 	default:
 		err = fmt.Errorf("invalid symbol %s", next)

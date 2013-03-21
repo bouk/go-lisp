@@ -7,14 +7,32 @@ import (
 
 var functionTestcases = []struct {
 	input  string
-	output int
+	output Value
 }{
 	{"(+ 1 2)", 3},
 	{"(- 1 2)", -1},
 	{"(* 2 3)", 6},
 	{"(/ 4 2)", 2},
 	{"(+ (+ 1  1) (+ 1 1))", 4},
+	{"(+ 1 1 1)", 3},
+	{`
+(+ 1
+
+
+	(*
+		1
+		2)
+
+
+	)
+`, 3},
 	{"1", 1},
+	{"yoloswag", "yoloswag"},
+	{"", nil},
+	{"-1", -1},
+	{`(+ "a" "b" "c")`, "abc"},
+	{`(+ "#" "yolo" (* (* 20 7) 3))`, "#yolo420"},
+	{`"\""`, "\""},
 }
 
 func TestFunctions(t *testing.T) {
@@ -24,13 +42,13 @@ func TestFunctions(t *testing.T) {
 			output, interpretErr := node.Interpret()
 			if interpretErr == nil {
 				if output != testcase.output {
-					t.Errorf("%v %v => %v wanted %v", i, testcase.input, output, testcase.output)
+					t.Errorf("#%d: %v => %v wanted %v", i, testcase.input, output, testcase.output)
 				}
 			} else {
-				t.Errorf("%v Error %v", i, interpretErr)
+				t.Errorf("#%v: error %v", i, interpretErr)
 			}
 		} else {
-			t.Errorf("%v Error %v", i, parseErr)
+			t.Errorf("#%v: error %v in %s", i, parseErr, testcase.input)
 		}
 	}
 }
