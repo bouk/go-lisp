@@ -22,10 +22,14 @@ func (s *Scope) FindFunction(name string) (f Function) {
 	return f
 }
 
-func (s *Scope) RegisterFunction(names []string, f Function) {
+func (s *Scope) RegisterFunctionAliases(names []string, f Function) {
 	for _, name := range names {
 		s.Functions[name] = f
 	}
+}
+
+func (s *Scope) RegisterFunction(name string, f Function) {
+	s.Functions[name] = f
 }
 
 func NewScope(parent *Scope) *Scope {

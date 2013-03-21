@@ -22,7 +22,7 @@ func evaluateArgs(s *Scope, args []TreeNode) (result []Value, err error) {
 }
 
 func builtinFunctions(s *Scope) {
-	s.RegisterFunction([]string{"*", "mult"}, func(s *Scope, args []TreeNode) (Value, error) {
+	s.RegisterFunctionAliases([]string{"*", "mult"}, func(s *Scope, args []TreeNode) (Value, error) {
 		if len(args) != 2 {
 			return 0, errors.New("not right number of arguments for multiply, should be two")
 		}
@@ -44,7 +44,7 @@ func builtinFunctions(s *Scope) {
 		return result, nil
 	})
 
-	s.RegisterFunction([]string{"+", "add"}, func(s *Scope, args []TreeNode) (Value, error) {
+	s.RegisterFunctionAliases([]string{"+", "add"}, func(s *Scope, args []TreeNode) (Value, error) {
 		if len(args) != 2 {
 			return 0, errors.New("not right number of arguments for add, should be two")
 		}
@@ -85,7 +85,7 @@ func builtinFunctions(s *Scope) {
 		return nil, nil
 	})
 
-	s.RegisterFunction([]string{"-", "sub"}, func(s *Scope, args []TreeNode) (Value, error) {
+	s.RegisterFunctionAliases([]string{"-", "sub"}, func(s *Scope, args []TreeNode) (Value, error) {
 		if len(args) != 2 {
 			return 0, errors.New("not right number of arguments for subtract, should be two")
 		}
@@ -112,7 +112,7 @@ func builtinFunctions(s *Scope) {
 		return result, nil
 	})
 
-	s.RegisterFunction([]string{"/", "div"}, func(s *Scope, args []TreeNode) (Value, error) {
+	s.RegisterFunctionAliases([]string{"/", "div"}, func(s *Scope, args []TreeNode) (Value, error) {
 		if len(args) != 2 {
 			return 0, errors.New("invalid number of arguments for divide, has to be two")
 		}
