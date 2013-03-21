@@ -112,27 +112,56 @@ func builtinFunctions(s *Scope) {
 		return result, nil
 	})
 
-	s.RegisterFunctionAliases([]string{"/", "div"}, func(s *Scope, args []TreeNode) (Value, error) {
+	s.RegisterFunctionAliases([]string{"/", "div"}, func(s *Scope, args []TreeNode) (result Value, err error) {
 		if len(args) != 2 {
 			return 0, errors.New("invalid number of arguments for divide, has to be two")
 		}
 
 		evaluatedArgs, err := evaluateArgs(s, args)
 		if err != nil {
-			return nil, err
-		}
-		switch evaluatedArgs[0].(type) {
-		case int:
-			switch evaluatedArgs[1].(type) {
-			case int:
-			default:
-				return nil, invalidTypeError("int", evaluatedArgs[1])
-			}
-		default:
-			return nil, invalidTypeError("int", evaluatedArgs[0])
+			return
 		}
 
-		result := evaluatedArgs[0].(int) / evaluatedArgs[1].(int)
-		return result, nil
+		firstVal, firstOk := evaluatedArgs[0].(int)
+		if !firstOk {
+			return nil, invalidTypeError("int", evaluatedArgs[0])
+		}
+		secondVal, secondOk := evaluatedArgs[1].(int)
+		if !secondOk {
+			return nil, invalidTypeError("int", evaluatedArgs[1])
+		}
+
+		result = firstVal / secondVal
+		return
+	})
+
+	s.RegisterFunction("set", func(s *Scope, args []TreeNode) (value Value, err error) {
+		if len(args) != 2 {
+			return 0, errors.New("set requires two arguments")
+		}
+
+		node, ok := args[0].(*SymbolNode)
+		if !ok {
+			return nil, errors.New("set requires symbol")
+		}
+
+		value, err = args[1].Interpret(s)
+
+		s.SetVariable(node.Name, value)
+		return
+	})
+
+	s.RegisterFunction("get", func(s *Scope, args []TreeNode) (value Value, err error) {
+		if len(args) != 1 {
+			return 0, errors.New("get requires one argument")
+		}
+
+		node, ok := args[0].(*SymbolNode)
+		if !ok {
+			return nil, errors.New("get requires symbol")
+		}
+
+		value = s.GetVariable(node.Name)
+		return
 	})
 }

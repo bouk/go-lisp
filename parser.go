@@ -9,7 +9,7 @@ import (
 )
 
 type TreeNode interface {
-	Interpret(s *Scope) (n Value, err error)
+	Interpret(s *Scope) (v Value, err error)
 }
 
 type ValueNode struct {
@@ -38,6 +38,10 @@ type SymbolNode struct {
 	Name string
 }
 
+func (node *SymbolNode) Interpret(s *Scope) (v Value, err error) {
+	return s.GetVariable(node.Name), nil
+}
+
 type RootNode struct {
 	Program TreeNode
 }
@@ -46,10 +50,6 @@ func (node *RootNode) Interpret() (v Value, err error) {
 	s := NewScope(nil)
 	builtinFunctions(s)
 	return node.Program.Interpret(s)
-}
-
-func (node *SymbolNode) Interpret(s *Scope) (v Value, err error) {
-	return s.FindVariable(node.Name), nil
 }
 
 // Parses an io stream like a file
