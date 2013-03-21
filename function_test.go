@@ -27,7 +27,7 @@ var functionTestcases = []struct {
 	)
 `, 3},
 	{"1", 1},
-	{"yoloswag", "yoloswag"},
+	{"yoloswag", nil},
 	{"", nil},
 	{"-1", -1},
 	{`(+ "a" "bc")`, "abc"},

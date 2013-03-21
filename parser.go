@@ -9,14 +9,14 @@ import (
 )
 
 type TreeNode interface {
-	Interpret() (n Value, err error)
+	Interpret(s *Scope) (n Value, err error)
 }
 
 type ValueNode struct {
 	Value
 }
 
-func (node *ValueNode) Interpret() (v Value, err error) {
+func (node *ValueNode) Interpret(s *Scope) (v Value, err error) {
 	return node.Value, nil
 }
 
@@ -25,34 +25,38 @@ type FunctionNode struct {
 	Args []TreeNode
 }
 
-func (node *FunctionNode) Interpret() (v Value, err error) {
-	f, exists := registeredFunctions[node.Name]
-	if !exists {
+func (node *FunctionNode) Interpret(s *Scope) (v Value, err error) {
+	f := s.FindFunction(node.Name)
+	if f == nil {
 		return nil, fmt.Errorf("function %q not found", node.Name)
 	}
 
-	args := make([]Value, len(node.Args))
-	for index, child := range node.Args {
-		value, err := child.Interpret()
-		if err != nil {
-			return 0, err
-		}
-		args[index] = value
-	}
-
-	return f(args)
+	return f(s, node.Args)
 }
 
 type SymbolNode struct {
 	Name string
 }
 
-func (node *SymbolNode) Interpret() (v Value, err error) {
-	return node.Name, nil
+type RootNode struct {
+	Program TreeNode
 }
 
-func Parse(input io.Reader) (result TreeNode, err error) {
-	return parse(bufio.NewReader(input))
+func (node *RootNode) Interpret() (v Value, err error) {
+	s := NewScope(nil)
+	builtinFunctions(s)
+	return node.Program.Interpret(s)
+}
+
+func (node *SymbolNode) Interpret(s *Scope) (v Value, err error) {
+	return s.FindVariable(node.Name), nil
+}
+
+// Parses an io stream like a file
+func Parse(input io.Reader) (upperNode *RootNode, err error) {
+	upperNode = &RootNode{}
+	upperNode.Program, err = parse(bufio.NewReader(input))
+	return
 }
 
 func isFirstSymbolRune(r rune) bool {
