@@ -21,8 +21,20 @@ func evaluateArgs(s *Scope, args []TreeNode) (result []Value, err error) {
 	return
 }
 
-func builtinFunctions(s *Scope) {
-	s.RegisterFunctionAliases([]string{"*", "mult"}, func(s *Scope, args []TreeNode) (result Value, err error) {
+func evaluateToString(s *Scope, node TreeNode) (str string, err error) {
+	funNameValue, err := node.Interpret(s)
+	if err != nil {
+		return
+	}
+	str, ok := funNameValue.(string)
+	if !ok {
+		err = errors.New("should be string")
+	}
+	return
+}
+
+func builtinFunctions(defaultScope *Scope) {
+	defaultScope.RegisterFunctionAliases([]string{"*", "mult"}, func(s *Scope, args []TreeNode) (result Value, err error) {
 		if len(args) != 2 {
 			return 0, errors.New("not right number of arguments for multiply, should be two")
 		}
@@ -45,7 +57,7 @@ func builtinFunctions(s *Scope) {
 		return
 	})
 
-	s.RegisterFunctionAliases([]string{"+", "add"}, func(s *Scope, args []TreeNode) (Value, error) {
+	defaultScope.RegisterFunctionAliases([]string{"+", "add"}, func(s *Scope, args []TreeNode) (Value, error) {
 		if len(args) != 2 {
 			return 0, errors.New("not right number of arguments for add, should be two")
 		}
@@ -86,7 +98,7 @@ func builtinFunctions(s *Scope) {
 		return nil, nil
 	})
 
-	s.RegisterFunctionAliases([]string{"-", "sub"}, func(s *Scope, args []TreeNode) (result Value, res error) {
+	defaultScope.RegisterFunctionAliases([]string{"-", "sub"}, func(s *Scope, args []TreeNode) (result Value, res error) {
 		if len(args) != 2 {
 			return 0, errors.New("not right number of arguments for subtract, should be two")
 		}
@@ -114,7 +126,7 @@ func builtinFunctions(s *Scope) {
 		return
 	})
 
-	s.RegisterFunctionAliases([]string{"/", "div"}, func(s *Scope, args []TreeNode) (result Value, err error) {
+	defaultScope.RegisterFunctionAliases([]string{"/", "div"}, func(s *Scope, args []TreeNode) (result Value, err error) {
 		if len(args) != 2 {
 			return 0, errors.New("invalid number of arguments for divide, has to be two")
 		}
@@ -137,7 +149,7 @@ func builtinFunctions(s *Scope) {
 		return
 	})
 
-	s.RegisterFunction("set", func(s *Scope, args []TreeNode) (value Value, err error) {
+	defaultScope.RegisterFunction("set", func(s *Scope, args []TreeNode) (value Value, err error) {
 		if len(args) != 2 {
 			return 0, errors.New("set requires two arguments")
 		}
@@ -153,7 +165,7 @@ func builtinFunctions(s *Scope) {
 		return
 	})
 
-	s.RegisterFunction("get", func(s *Scope, args []TreeNode) (value Value, err error) {
+	defaultScope.RegisterFunction("get", func(s *Scope, args []TreeNode) (value Value, err error) {
 		if len(args) != 1 {
 			return 0, errors.New("get requires one argument")
 		}
@@ -167,7 +179,7 @@ func builtinFunctions(s *Scope) {
 		return
 	})
 
-	s.RegisterFunction("scope", func(s *Scope, args []TreeNode) (value Value, err error) {
+	defaultScope.RegisterFunction("scope", func(s *Scope, args []TreeNode) (value Value, err error) {
 		innerScope := NewScope(s)
 
 		for _, child := range args {
@@ -180,6 +192,54 @@ func builtinFunctions(s *Scope) {
 		if innerScope.Variables["_return"] != nil {
 			value = innerScope.Variables["_return"]
 		}
+		return
+	})
+
+	defaultScope.RegisterFunction("defun", func(s *Scope, args []TreeNode) (value Value, err error) {
+		if len(args) < 2 {
+			return nil, fmt.Errorf("defun requires at least 2 arguments, %d given", len(args))
+		}
+
+		symbolNode, ok := args[0].(*SymbolNode)
+		if !ok {
+			return nil, errors.New("function name should be a symbol")
+		}
+		name := symbolNode.Name
+
+		funArgs := make([]string, len(args)-2)
+		for i, argument := range args[1 : len(args)-1] {
+			symbolNode, ok = argument.(*SymbolNode)
+			if !ok {
+				return nil, errors.New("function argument name should be a symbol")
+			}
+			funArgs[i] = symbolNode.Name
+		}
+
+		program := args[len(args)-1]
+
+		s.RegisterFunction(name, func(funScope *Scope, args []TreeNode) (Value, error) {
+			if len(args) != len(funArgs) {
+				return nil, fmt.Errorf("function %s needs %d arguments", name, len(funArgs))
+			}
+
+			funScope = NewScope(funScope)
+			for i, arg := range funArgs {
+				funScope.Variables[arg] = args[i]
+			}
+			return program.Interpret(funScope)
+		})
+		return
+	})
+
+	defaultScope.RegisterFunction("print", func(scope *Scope, args []TreeNode) (v Value, err error) {
+		evaluatedArgs, err := evaluateArgs(scope, args)
+		if err != nil {
+			return nil, err
+		}
+		for _, val := range evaluatedArgs {
+			fmt.Fprint(scope.Out, val)
+		}
+
 		return
 	})
 }

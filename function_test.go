@@ -1,6 +1,7 @@
 package lisp
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 )
@@ -48,6 +49,12 @@ var functionTestcases = []struct {
 		(set hello 1337))`, 4},
 	{`(set a 1)
 		a`, 1},
+	{`
+	(set a 1)
+	(defun lol a)
+	(set a 2)
+	a
+		`, 2},
 }
 
 func TestFunctions(t *testing.T) {
@@ -58,6 +65,32 @@ func TestFunctions(t *testing.T) {
 			if interpretErr == nil {
 				if output != testcase.output {
 					t.Errorf("#%d: %#v => %#v wanted %#v", i, testcase.input, output, testcase.output)
+				}
+			} else {
+				t.Errorf("#%v: error %v", i, interpretErr)
+			}
+		} else {
+			t.Errorf("#%v: error %s in %#v", i, parseErr, testcase.input)
+		}
+	}
+}
+
+var outputTestcases = []struct {
+	input  string
+	output string
+}{
+	{`(print "hello")`, `hello`},
+}
+
+func TestOutputfunction(t *testing.T) {
+	for i, testcase := range outputTestcases {
+		node, parseErr := Parse(strings.NewReader(testcase.input))
+		if parseErr == nil {
+			var buf bytes.Buffer
+			_, interpretErr := node.Interpret(&buf)
+			if interpretErr == nil {
+				if buf.String() != testcase.output {
+					t.Errorf("#%d: %#v => %#v wanted %#v", i, testcase.input, buf.String(), testcase.output)
 				}
 			} else {
 				t.Errorf("#%v: error %v", i, interpretErr)
