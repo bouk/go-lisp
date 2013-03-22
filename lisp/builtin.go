@@ -98,34 +98,6 @@ func builtinFunctions(defaultScope *Scope) {
 		return nil, nil
 	})
 
-	defaultScope.RegisterFunctionAliases([]string{"-", "sub"}, func(s *Scope, args []TreeNode) (result Value, res error) {
-		if len(args) != 2 {
-			return 0, errors.New("not right number of arguments for subtract, should be two")
-		}
-
-		evaluatedArgs, err := evaluateArgs(s, args)
-		if err != nil {
-			return nil, err
-		}
-
-		switch evaluatedArgs[0].(type) {
-		case int:
-		default:
-			return nil, invalidTypeError("int", evaluatedArgs[0])
-		}
-		intResult := evaluatedArgs[0].(int)
-		for _, argument := range evaluatedArgs[1:] {
-			switch argument.(type) {
-			case int:
-			default:
-				return nil, invalidTypeError("int", argument)
-			}
-			intResult -= argument.(int)
-		}
-		result = intResult
-		return
-	})
-
 	defaultScope.RegisterFunctionAliases([]string{"/", "div"}, func(s *Scope, args []TreeNode) (result Value, err error) {
 		if len(args) != 2 {
 			return 0, errors.New("invalid number of arguments for divide, has to be two")
