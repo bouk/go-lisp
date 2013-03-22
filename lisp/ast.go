@@ -45,14 +45,18 @@ type RootNode struct {
 	Program []TreeNode
 }
 
-func (node *RootNode) Interpret(out io.Writer) (v Value, err error) {
+func (node *RootNode) Interpret(out io.Writer, in io.Reader) (v Value, err error) {
 	if out == nil {
 		out = os.Stdout
+	}
+	if in == nil {
+		in = os.Stdin
 	}
 
 	s := NewScope(nil)
 	builtinFunctions(s)
 	s.Out = out
+	s.In = bufio.NewReader(in)
 
 	for _, node := range node.Program {
 		v, err = node.Interpret(s)

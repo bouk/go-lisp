@@ -33,6 +33,26 @@ func evaluateToString(s *Scope, node TreeNode) (str string, err error) {
 	return
 }
 
+func evaluateToBool(s *Scope, node TreeNode) (b bool, err error) {
+	val, err := node.Interpret(s)
+	if err != nil {
+		return
+	}
+
+	if val == nil {
+		return false, nil
+	}
+	switch val.(type) {
+	case int:
+		b = val.(int) != 0
+	case string:
+		b = len(val.(string)) > 0
+	default:
+		return false, fmt.Errorf("Invalid boolean %#v", val)
+	}
+	return
+}
+
 func builtinFunctions(defaultScope *Scope) {
 	defaultScope.RegisterFunctionAliases([]string{"*", "mult"}, func(s *Scope, args []TreeNode) (result Value, err error) {
 		if len(args) != 2 {
@@ -151,6 +171,16 @@ func builtinFunctions(defaultScope *Scope) {
 		return
 	})
 
+	defaultScope.RegisterFunction("stat", func(s *Scope, args []TreeNode) (value Value, err error) {
+		for _, child := range args {
+			value, err = child.Interpret(s)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return
+	})
+
 	defaultScope.RegisterFunction("scope", func(s *Scope, args []TreeNode) (value Value, err error) {
 		innerScope := NewScope(s)
 
@@ -223,6 +253,97 @@ func builtinFunctions(defaultScope *Scope) {
 			}
 		}
 
+		return
+	})
+
+	defaultScope.RegisterFunction("if", func(scope *Scope, args []TreeNode) (v Value, err error) {
+		if len(args) != 3 {
+			return nil, errors.New("if requires three arguments")
+		}
+
+		result, err := evaluateToBool(scope, args[0])
+		if err != nil {
+			return
+		}
+
+		if result {
+			return args[1].Interpret(scope)
+		} else {
+			return args[2].Interpret(scope)
+		}
+
+		return
+	})
+
+	defaultScope.RegisterFunction("while", func(scope *Scope, args []TreeNode) (v Value, err error) {
+		if len(args) != 2 {
+			return nil, errors.New("while requires two arguments")
+		}
+
+		innerScope := NewScope(scope)
+
+		for {
+			b, err := evaluateToBool(innerScope, args[0])
+			if err != nil {
+				return nil, err
+			}
+			if !b {
+				break
+			}
+
+			v, err = args[1].Interpret(innerScope)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		return
+	})
+
+	defaultScope.RegisterFunction("getline", func(scope *Scope, args []TreeNode) (v Value, err error) {
+		if len(args) != 0 {
+			return nil, errors.New("getline takes no arguments")
+		}
+		line, err := scope.In.ReadString('\n')
+		return line[:len(line)-1], err
+	})
+
+	defaultScope.RegisterFunction("==", func(scope *Scope, args []TreeNode) (v Value, err error) {
+		if len(args) != 2 {
+			return nil, errors.New("== takes two arguments")
+		}
+		val1, err := args[0].Interpret(scope)
+		if err != nil {
+			return
+		}
+		val2, err := args[1].Interpret(scope)
+		if err != nil {
+			return
+		}
+
+		if val1 == val2 {
+			v = 1
+		} else {
+			v = 0
+		}
+		return
+	})
+
+	defaultScope.RegisterFunction("let", func(s *Scope, args []TreeNode) (value Value, err error) {
+		if len(args) != 2 {
+			return 0, errors.New("let requires two arguments")
+		}
+
+		node, ok := args[0].(*SymbolNode)
+		if !ok {
+			return nil, errors.New("let requires symbol")
+		}
+
+		value, err = args[1].Interpret(s)
+		if err != nil {
+			return
+		}
+		s.Variables[node.Name] = value
 		return
 	})
 }

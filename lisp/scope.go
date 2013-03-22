@@ -1,12 +1,14 @@
 package lisp
 
 import (
+	"bufio"
 	"io"
 )
 
 type Scope struct {
 	Parent    *Scope
 	Out       io.Writer
+	In        *bufio.Reader
 	Variables map[string]Value
 	Functions map[string]Function
 }
@@ -33,7 +35,7 @@ func (s *Scope) RegisterFunction(name string, f Function) {
 func (s *Scope) GetVariable(name string) (val Value) {
 	val, found := s.Variables[name]
 	if !found && s.Parent != nil {
-		val = s.Parent.Parent.GetVariable(name)
+		val = s.Parent.GetVariable(name)
 	}
 	return
 }
@@ -63,6 +65,7 @@ func NewScope(parent *Scope) (s *Scope) {
 	if parent != nil {
 		s.Parent = parent
 		s.Out = parent.Out
+		s.In = parent.In
 	}
 	return
 }

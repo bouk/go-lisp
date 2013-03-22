@@ -11,7 +11,6 @@ var functionTestcases = []struct {
 	output Value
 }{
 	{"(+ 1 2)", 3},
-	{"(- 1 2)", -1},
 	{"(* 2 3)", 6},
 	{"(/ 4 2)", 2},
 	{"(+ (+ 1  1) (+ 1 1))", 4},
@@ -55,6 +54,10 @@ var functionTestcases = []struct {
 	(set a 2)
 	a
 		`, 2},
+	{`(if 1 1 0)`, 1},
+	{`(if 1 0 1)`, 0},
+	{`(if (== 1 1) 1 0)`, 1},
+	{`(if (== 1 2) 0 1)`, 1},
 }
 
 func TestFunctions(t *testing.T) {
@@ -62,7 +65,7 @@ func TestFunctions(t *testing.T) {
 		node := NewRootNode()
 		parseErr := node.Parse(strings.NewReader(testcase.input))
 		if parseErr == nil {
-			output, interpretErr := node.Interpret(nil)
+			output, interpretErr := node.Interpret(nil, nil)
 			if interpretErr == nil {
 				if output != testcase.output {
 					t.Errorf("#%d: %#v => %#v wanted %#v", i, testcase.input, output, testcase.output)
@@ -96,7 +99,7 @@ func TestOutputfunction(t *testing.T) {
 		parseErr := node.Parse(strings.NewReader(testcase.input))
 		if parseErr == nil {
 			var buf bytes.Buffer
-			_, interpretErr := node.Interpret(&buf)
+			_, interpretErr := node.Interpret(&buf, nil)
 			if interpretErr == nil {
 				if buf.String() != testcase.output {
 					t.Errorf("#%d: %#v => %#v wanted %#v", i, testcase.input, buf.String(), testcase.output)
