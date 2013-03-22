@@ -33,10 +33,13 @@ func main() {
 
 		err = root.Parse(input)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, "PARSING ERROR: ", err)
 			os.Exit(0)
 		}
 	}
 
-	root.Interpret(os.Stdout)
+	_, err = root.Interpret(os.Stdout, os.Stdin)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "ERROR: ", err)
+	}
 }
