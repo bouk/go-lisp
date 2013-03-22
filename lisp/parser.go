@@ -19,22 +19,8 @@ var (
 
 // Parses an io stream like a file
 func Parse(input io.Reader) (upperNode *RootNode, err error) {
-	reader := bufio.NewReader(input)
-	upperNode = &RootNode{}
-	upperNode.Program = make([]TreeNode, 0, 1)
-	for {
-		node, err := parse(reader)
-		if err != nil {
-			if err == doneReading {
-				err = nil
-				break
-			} else {
-				return nil, err
-			}
-		}
-		upperNode.Program = append(upperNode.Program, node)
-	}
-
+	upperNode = NewRootNode()
+	err = upperNode.Parse(input)
 	return
 }
 

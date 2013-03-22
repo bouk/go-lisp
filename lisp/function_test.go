@@ -59,7 +59,8 @@ var functionTestcases = []struct {
 
 func TestFunctions(t *testing.T) {
 	for i, testcase := range functionTestcases {
-		node, parseErr := Parse(strings.NewReader(testcase.input))
+		node := NewRootNode()
+		parseErr := node.Parse(strings.NewReader(testcase.input))
 		if parseErr == nil {
 			output, interpretErr := node.Interpret(nil)
 			if interpretErr == nil {
@@ -91,7 +92,8 @@ var outputTestcases = []struct {
 
 func TestOutputfunction(t *testing.T) {
 	for i, testcase := range outputTestcases {
-		node, parseErr := Parse(strings.NewReader(testcase.input))
+		node := NewRootNode()
+		parseErr := node.Parse(strings.NewReader(testcase.input))
 		if parseErr == nil {
 			var buf bytes.Buffer
 			_, interpretErr := node.Interpret(&buf)

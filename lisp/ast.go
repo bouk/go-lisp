@@ -1,6 +1,7 @@
 package lisp
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"os"
@@ -61,4 +62,29 @@ func (node *RootNode) Interpret(out io.Writer) (v Value, err error) {
 		}
 	}
 	return
+}
+
+func (node *RootNode) Parse(input io.Reader) (err error) {
+	reader := bufio.NewReader(input)
+
+	for {
+		newNode, err := parse(reader)
+		if err != nil {
+			if err == doneReading {
+				err = nil
+				break
+			} else {
+				return err
+			}
+		}
+		node.Program = append(node.Program, newNode)
+	}
+
+	return
+}
+
+func NewRootNode() (node *RootNode) {
+	node = &RootNode{}
+	node.Program = make([]TreeNode, 0, 1)
+	return node
 }
