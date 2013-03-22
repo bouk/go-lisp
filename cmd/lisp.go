@@ -2,14 +2,41 @@ package main
 
 import (
 	"fmt"
-	"lisp"
+	"github.com/boukevanderbijl/go-lisp/lisp"
+	"io"
 	"os"
 )
 
 func main() {
-	root, err := lisp.Parse(os.Stdin)
-	if err != nil {
-		fmt.Println(err)
+	if len(os.Args) < 2 {
+		fmt.Fprintln(os.Stderr, "Please give at least one input file")
+		os.Exit(0)
 	}
+
+	root := lisp.NewRootNode()
+	var err error
+
+	for _, name := range os.Args[1:] {
+		var input io.Reader
+
+		if name == "-" {
+			input = os.Stdin
+		} else {
+			file, err := os.Open(name)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(0)
+			} else {
+				input = file
+			}
+		}
+
+		err = root.Parse(input)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(0)
+		}
+	}
+
 	root.Interpret(os.Stdout)
 }
