@@ -15,6 +15,13 @@ func main() {
 
 	root := lisp.NewRootNode()
 	var err error
+	var file *os.File
+
+	// autoload prelude.lisp if it exists in the current dir
+	file, err = os.Open("./prelude.lisp")
+	if err == nil {
+		err = root.Parse(file)
+	}
 
 	for _, name := range os.Args[1:] {
 		var input io.Reader
@@ -22,7 +29,7 @@ func main() {
 		if name == "-" {
 			input = os.Stdin
 		} else {
-			file, err := os.Open(name)
+			file, err = os.Open(name)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(0)

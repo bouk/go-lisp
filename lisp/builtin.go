@@ -236,6 +236,27 @@ func builtinFunctions(defaultScope *Scope) {
 		return
 	})
 
+	defaultScope.RegisterFunction("int", func(scope *Scope, args []TreeNode) (v Value, err error) {
+		if len(args) != 1 {
+			return nil, errors.New("int takes on argument")
+		}
+
+		v, err = args[0].Interpret(scope)
+		if err != nil {
+			return
+		}
+
+		switch v.(type) {
+		case int:
+		case string:
+			v, err = strconv.Atoi(v.(string))
+		default:
+			return nil, fmt.Errorf("incorrect int format %v", v)
+		}
+
+		return
+	})
+
 	defaultScope.RegisterFunction("print", func(scope *Scope, args []TreeNode) (v Value, err error) {
 		evaluatedArgs, err := evaluateArgs(scope, args)
 		if err != nil {

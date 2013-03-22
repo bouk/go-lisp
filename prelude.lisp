@@ -5,3 +5,5 @@
 (defun ! a (if a 0 1))
 
 (defun != a b (! (== a b)))
+
+(defun getint (int (getline)))
